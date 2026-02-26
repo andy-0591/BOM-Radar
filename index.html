@@ -3,7 +3,7 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body {
+body{
   margin:0;
   background:black;
   display:flex;
@@ -11,15 +11,15 @@ body {
   align-items:center;
   height:100vh;
 }
-img {
+img{
   width:100%;
   max-width:700px;
 }
-.controls {
+.controls{
   position:fixed;
   bottom:20px;
 }
-button {
+button{
   font-size:18px;
   margin:5px;
 }
@@ -37,51 +37,59 @@ button {
 </div>
 
 <script>
-const product = "IDR663"; // Brisbane radar
+const station = "IDR663";
 
 let frames = [];
 let index = 0;
 let dir = 1;
 let speed = 400;
 
-async function loadFrames() {
+// build rolling timestamps (last hour)
+function buildFrames(){
 
-  // BOM frame list used by official viewer
-  const url =
-    `https://reg.bom.gov.au/products/${product}.T.loop.json`;
+  frames = [];
 
-  try {
-    const res = await fetch(url);
-    const data = await res.json();
+  const now = new Date();
 
-    frames = data.images.map(img =>
-      `https://reg.bom.gov.au${img}`
+  for(let i=60;i>=0;i-=10){
+
+    const t = new Date(now - i*60000);
+
+    const y = t.getUTCFullYear();
+    const m = String(t.getUTCMonth()+1).padStart(2,'0');
+    const d = String(t.getUTCDate()).padStart(2,'0');
+    const hh = String(t.getUTCHours()).padStart(2,'0');
+
+    // radar only every 6 minutes approx → round
+    const mm = String(Math.floor(t.getUTCMinutes()/6)*6)
+                .padStart(2,'0');
+
+    frames.push(
+      `https://reg.bom.gov.au/radar/${station}.T.${y}${m}${d}.${hh}${mm}.png`
     );
-
-  } catch(e) {
-    console.log("Frame load failed", e);
   }
 }
 
-function animate() {
+function animate(){
+
   if(frames.length){
     document.getElementById("radar").src =
       frames[index];
-
-    index += dir;
-
-    if(index >= frames.length-1 || index <= 0)
-      dir *= -1;
   }
+
+  index += dir;
+
+  if(index >= frames.length-1 || index <= 0)
+    dir *= -1;
 
   setTimeout(animate, speed);
 }
 
-loadFrames();
+buildFrames();
 animate();
 
-// refresh frame list every 5 mins WITHOUT reset
-setInterval(loadFrames, 300000);
+// rebuild frame list every 5 mins WITHOUT resetting controls
+setInterval(buildFrames,300000);
 
 </script>
 
