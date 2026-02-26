@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body {
+  margin:0;
+  background:black;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+img {
+  width:100%;
+  max-width:600px;
+}
+.controls {
+  position:fixed;
+  bottom:20px;
+}
+button {
+  font-size:18px;
+  margin:5px;
+}
+</style>
+</head>
+
+<body>
+
+<img id="radar">
+
+<div class="controls">
+  <button onclick="dir*=-1">Reverse</button>
+  <button onclick="speed+=100">Slower</button>
+  <button onclick="speed=Math.max(100,speed-100)">Faster</button>
+</div>
+
+<script>
+const station = "IDR663"; // Brisbane radar
+let frames = [];
+let index = 0;
+let dir = 1;
+let speed = 400;
+
+// Build last 6 timestamps automatically
+function buildFrames() {
+  frames = [];
+  const now = new Date();
+
+  for (let i=60; i>=0; i-=10) {
+    let t = new Date(now - i*60000);
+
+    const y = t.getUTCFullYear();
+    const m = String(t.getUTCMonth()+1).padStart(2,'0');
+    const d = String(t.getUTCDate()).padStart(2,'0');
+    const hh = String(t.getUTCHours()).padStart(2,'0');
+    const mm = String(Math.floor(t.getUTCMinutes()/10)*10).padStart(2,'0');
+
+    frames.push(
+      `https://reg.bom.gov.au/radar/${station}.T.${y}${m}${d}.${hh}${mm}.png`
+    );
+  }
+}
+
+function loop() {
+  if(frames.length){
+    document.getElementById("radar").src = frames[index];
+    index += dir;
+
+    if(index >= frames.length-1 || index <= 0)
+      dir *= -1;
+  }
+
+  setTimeout(loop, speed);
+}
+
+buildFrames();
+loop();
+
+// refresh frames every 5 mins WITHOUT resetting speed
+setInterval(buildFrames, 300000);
+</script>
+
+</body>
+</html>
