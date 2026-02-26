@@ -2,6 +2,7 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <style>
 body{
   margin:0;
@@ -11,10 +12,20 @@ body{
   align-items:center;
   height:100vh;
 }
-img{
+
+#container{
+  position:relative;
   width:100%;
   max-width:700px;
 }
+
+.layer{
+  position:absolute;
+  width:100%;
+  top:0;
+  left:0;
+}
+
 .controls{
   position:fixed;
   bottom:20px;
@@ -28,48 +39,46 @@ button{
 
 <body>
 
-<img id="radar">
+<div id="container">
+
+<img class="layer"
+src="https://reg.bom.gov.au/radar/IDR663.background.png">
+
+<img id="radar" class="layer">
+
+<img class="layer"
+src="https://reg.bom.gov.au/radar/IDR663.range.png">
+
+</div>
 
 <div class="controls">
-  <button onclick="dir*=-1">Reverse</button>
-  <button onclick="speed+=100">Slower</button>
-  <button onclick="speed=Math.max(100,speed-100)">Faster</button>
+<button onclick="dir*=-1">Reverse</button>
+<button onclick="speed+=100">Slower</button>
+<button onclick="speed=Math.max(100,speed-100)">Faster</button>
 </div>
 
 <script>
-const station = "IDR663";
 
 let frames = [];
 let index = 0;
 let dir = 1;
 let speed = 400;
 
-// build rolling timestamps (last hour)
-function buildFrames(){
+// keep last few radar frames
+function updateFrame(){
 
-  frames = [];
+  // cache-buster forces newest scan
+  const url =
+    "https://reg.bom.gov.au/radar/IDR663.T.latest.png?"+Date.now();
 
-  const now = new Date();
+  frames.push(url);
 
-  for(let i=60;i>=0;i-=10){
-
-    const t = new Date(now - i*60000);
-
-    const y = t.getUTCFullYear();
-    const m = String(t.getUTCMonth()+1).padStart(2,'0');
-    const d = String(t.getUTCDate()).padStart(2,'0');
-    const hh = String(t.getUTCHours()).padStart(2,'0');
-
-    // radar only every 6 minutes approx → round
-    const mm = String(Math.floor(t.getUTCMinutes()/6)*6)
-                .padStart(2,'0');
-
-    frames.push(
-      `https://reg.bom.gov.au/radar/${station}.T.${y}${m}${d}${hh}${mm}.png`
-    );
-  }
+  // keep last 6 scans
+  if(frames.length > 6)
+    frames.shift();
 }
 
+// animation loop
 function animate(){
 
   if(frames.length){
@@ -85,13 +94,6 @@ function animate(){
   setTimeout(animate, speed);
 }
 
-buildFrames();
-animate();
-
-// rebuild frame list every 5 mins WITHOUT resetting controls
-setInterval(buildFrames,300000);
-
-</script>
-
-</body>
-</html>
+// grab new radar scan every 5 minutes
+updateFrame();
+setInt
