@@ -13,7 +13,7 @@ body {
 }
 img {
   width:100%;
-  max-width:600px;
+  max-width:700px;
 }
 .controls {
   position:fixed;
@@ -37,49 +37,52 @@ button {
 </div>
 
 <script>
-const station = "IDR663"; // Brisbane radar
+const product = "IDR663"; // Brisbane radar
+
 let frames = [];
 let index = 0;
 let dir = 1;
 let speed = 400;
 
-// Build last 6 timestamps automatically
-function buildFrames() {
-  frames = [];
-  const now = new Date();
+async function loadFrames() {
 
-  for (let i=60; i>=0; i-=10) {
-    let t = new Date(now - i*60000);
+  // BOM frame list used by official viewer
+  const url =
+    `https://reg.bom.gov.au/products/${product}.T.loop.json`;
 
-    const y = t.getUTCFullYear();
-    const m = String(t.getUTCMonth()+1).padStart(2,'0');
-    const d = String(t.getUTCDate()).padStart(2,'0');
-    const hh = String(t.getUTCHours()).padStart(2,'0');
-    const mm = String(Math.floor(t.getUTCMinutes()/10)*10).padStart(2,'0');
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
 
-    frames.push(
-      `https://reg.bom.gov.au/radar/${station}.T.${y}${m}${d}.${hh}${mm}.png`
+    frames = data.images.map(img =>
+      `https://reg.bom.gov.au${img}`
     );
+
+  } catch(e) {
+    console.log("Frame load failed", e);
   }
 }
 
-function loop() {
+function animate() {
   if(frames.length){
-    document.getElementById("radar").src = frames[index];
+    document.getElementById("radar").src =
+      frames[index];
+
     index += dir;
 
     if(index >= frames.length-1 || index <= 0)
       dir *= -1;
   }
 
-  setTimeout(loop, speed);
+  setTimeout(animate, speed);
 }
 
-buildFrames();
-loop();
+loadFrames();
+animate();
 
-// refresh frames every 5 mins WITHOUT resetting speed
-setInterval(buildFrames, 300000);
+// refresh frame list every 5 mins WITHOUT reset
+setInterval(loadFrames, 300000);
+
 </script>
 
 </body>
